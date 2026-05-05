@@ -33,21 +33,27 @@ begin
     
     decode: process(IEn, RCJ, I)
     begin
+        REn <= "000";
+        RSA <= "000";
+        RSB <= "000";
+        OpS <= AU_ADD_SIGNAL;
+        IM <= "0000";
+        J <= NotJump;
+        JA <= "000";
+        L <= Register_Load;
+
         case IEn is
             when MOVI_OP => 
-                J <= NotJump;
                 IM <= I(3 downto 0); 
                 L <= Immediate_Load; 
                 REn <= I(9 downto 7);
             when ADD_OP => 
-                J <= NotJump;
                 OpS <= AU_ADD_SIGNAL;
                 RSA <= I(9 downto 7);
                 RSB <= I(6 downto 4);
                 REn <= I(9 downto 7);
                 L <= Register_Load;
             when NEG_OP => 
-                J <= NotJump;
                 OpS <= AU_SUB_SIGNAL;
                 RSA <= "000";
                 RSB <= I(9 downto 7);
@@ -55,15 +61,12 @@ begin
                 L <= Register_Load;
             when JZR_OP => 
                 RSA <= I(9 downto 7);
-                REn <= "000";
                 if RCJ = "0000" then
                     J <= Jump;
                     JA <= I(2 downto 0);
-                else
-                    J <= NotJump;
                 end if;
             when others => 
-                
+                null;
         end case;
 
 

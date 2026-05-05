@@ -38,7 +38,7 @@ entity Decoder_3_to_8 is
 end Decoder_3_to_8;
 
 architecture Behavioral of Decoder_3_to_8 is
-    component Decode_2_to_4  
+    component Decoder_2_to_4  
     port( 
         I: in STD_LOGIC_VECTOR(1 downto 0); 
         EN: in STD_LOGIC; 
@@ -50,12 +50,12 @@ architecture Behavioral of Decoder_3_to_8 is
     signal en0,en1, I2 : STD_LOGIC;
 
 begin
-   Decode_2_to_4_0 : Decode_2_to_4 
+   Decoder_2_to_4_0 : Decoder_2_to_4 
    port map( 
        I => I0, 
        EN => en0, 
        Y => Y0 ); 
-   Decode_2_to_4_1 : Decode_2_to_4 
+   Decoder_2_to_4_1 : Decoder_2_to_4 
    port map( 
        I => I1, 
        EN => en1, 

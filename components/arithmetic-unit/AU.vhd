@@ -24,13 +24,15 @@ begin
 
     process(Operation)
     begin
+        AS_CTRL <= '0';
+
         case Operation is
             when AU_ADD_SIGNAL =>
                 AS_CTRL <= '0';
             when AU_SUB_SIGNAL =>
                 AS_CTRL <= '1';
             when others =>
-                -- Do nothing
+                null;
         end case;
     end process;
     

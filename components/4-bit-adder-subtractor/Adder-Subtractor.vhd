@@ -13,7 +13,8 @@ end Add_Sub_4_bit;
 
 architecture Behavioral of Add_Sub_4_bit is
 
-SIGNAL B_inter, S_inter: STD_LOGIC_VECTOR(3 DOWNTO 0);
+  SIGNAL B_inter, S_inter: STD_LOGIC_VECTOR(3 DOWNTO 0);
+  SIGNAL Carry_Out : STD_LOGIC;
 
 begin
   RCA_4_0 : RCA_4
@@ -22,7 +23,7 @@ begin
         B => B_inter,
         C_in => CTRL,
         S => S_inter,
-        C_out => OverFlow);
+        C_out => Carry_Out);
 
   B_inter(0) <= B_AS(0) XOR CTRL; 
   B_inter(1) <= B_AS(1) XOR CTRL;
@@ -37,6 +38,8 @@ begin
       Zero <= '0';
     end if;
   end process;
+
+  OverFlow <= (not (A_AS(3) xor B_inter(3))) and (A_AS(3) xor S_inter(3));
 
   S_AS <= S_inter;
 
