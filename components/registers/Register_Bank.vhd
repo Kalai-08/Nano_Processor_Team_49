@@ -1,57 +1,120 @@
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.buses.all;
-use work.cpu_components.reg;
-use work.Logic_Components.Decoder_3_to_8;
+
 
 entity Register_Bank is
-    Port ( Reg_En : in register_address;
-           Res : in STD_LOGIC;
-           Clk : in STD_LOGIC;
-           Data : in data_bus;
-           Data_Buses : out data_buses);
+    Port ( Clk : in STD_LOGIC;
+           Reset : in STD_LOGIC;
+           D : in STD_LOGIC_VECTOR (3 downto 0);
+           R0 : out STD_LOGIC_VECTOR (3 downto 0);
+           R1 : out STD_LOGIC_VECTOR (3 downto 0);
+           R2 : out STD_LOGIC_VECTOR (3 downto 0);
+           R3 : out STD_LOGIC_VECTOR (3 downto 0);
+           R4 : out STD_LOGIC_VECTOR (3 downto 0);
+           R5 : out STD_LOGIC_VECTOR (3 downto 0);
+           R6 : out STD_LOGIC_VECTOR (3 downto 0);
+           R7 : out STD_LOGIC_VECTOR (3 downto 0);
+           I : in STD_LOGIC_VECTOR (2 downto 0));
 end Register_Bank;
 
 architecture Behavioral of Register_Bank is
 
-signal EN_inter : STD_LOGIC;
-signal Reg_sel : STD_LOGIC_VECTOR(7 downto 0);
+component Decoder_3_to_8
+    PORT( I : in STD_LOGIC_VECTOR (2 downto 0);
+          EN : in STD_LOGIC;
+          Y : out STD_LOGIC_VECTOR (7 downto 0));
+end component;
+
+component Register_4bit
+    PORT ( D : in STD_LOGIC_VECTOR (3 downto 0);
+           En : in STD_LOGIC;
+           Clk : in STD_LOGIC;
+           Reset : in STD_LOGIC;
+           Q : out STD_LOGIC_VECTOR (3 downto 0) );
+end component;
+
+signal EN,Reg_S : STD_LOGIC:='1';
+signal Y : STD_LOGIC_VECTOR(7 downto 0);
 
 begin
-    Decoder_3_to_8_0 : Decoder_3_to_8
-        port map(
-            I => Reg_En,
-            EN => '1', -- Always enabled
-            Y => Reg_Sel
+Decoder_3_to_8_new:Decoder_3_to_8
+ PORT MAP (
+        I=>I,
+        EN=>EN,
+        Y=>Y
         );
 
-    -- Read Only Register
-    reg_inst0: reg
-            generic map(
-                N => 4
-            )
-            port map(
-                D => "0000",
-                Res => Res,
-                EN => '1',
-                Clk => Clk,
-                Q => Data_Buses(0)
-            );
+Register_4bit_0 : Register_4bit
+ PORT MAP(
+    D => "0000",
+    En => Y(0),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R0    
+    );      
 
-    registers : for i in 1 to 7 generate
-       reg_inst: reg
-            generic map(
-                N => 4
-            )
-            port map(
-                D => Data,
-                Res => Res,
-                EN => Reg_Sel(i),
-                Clk => Clk,
-                Q => Data_Buses(i)
-            );
-    end generate registers;
+Register_4bit_1 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(1),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R1    
+    ); 
     
-    
+Register_4bit_2 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(2),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R2    
+    ); 
 
+Register_4bit_3 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(3),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R3    
+    ); 
+
+Register_4bit_4 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(4),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R4    
+    ); 
+
+Register_4bit_5 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(5),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R5    
+    ); 
+    
+Register_4bit_6 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(6),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R6    
+    ); 
+        
+Register_4bit_7 : Register_4bit
+ PORT MAP(
+    D => D,
+    En => Y(7),
+    Clk => Clk,
+    Reset => Reg_S,
+    Q => R7    
+    ); 
+Reg_S <= Reset;
 end Behavioral;
