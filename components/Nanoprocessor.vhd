@@ -1,131 +1,239 @@
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.buses.all;
-use work.cpu_components.all;
-use work.ALU_H.all;
 
-entity Nanoprocessor is
-    port(
-        Clk : in std_logic; -- Clock
-        Res : in std_logic; -- Reset
-        Overflow : out std_logic; -- Overflow Flag
-        Zero : out std_logic; -- Zero Flag
-        Data : out data_bus -- Last Register
+entity NanoProcessor is
+    Port (Clk : in STD_LOGIC;
+          Reset : in STD_LOGIC; 
+          Reg : out STD_LOGIC_VECTOR (3 downto 0);
+          Zero : out STD_LOGIC;
+          Overflow : out STD_LOGIC;  
+          Display : out STD_LOGIC_VECTOR (6 downto 0);
+          Anode: out STD_LOGIC_VECTOR (3 downto 0);
+          Carry: out STD_LOGIC  );
+end NanoProcessor;
+
+architecture Behavioral of NanoProcessor is
+
+component LUT_16_7
+    Port ( address : in STD_LOGIC_VECTOR (3 downto 0);
+           data : out STD_LOGIC_VECTOR (6 downto 0));
+end component;
+
+component Slow_Clk
+    Port ( Clk_in : in STD_LOGIC;
+           Clk_out : out STD_LOGIC);
+end component;
+
+component Add_Sub
+    Port ( A : in STD_LOGIC_VECTOR (3 downto 0);
+           B : in STD_LOGIC_VECTOR (3 downto 0);
+           Ctrl : in STD_LOGIC;
+           C_out : out STD_LOGIC;
+           S : out STD_LOGIC_VECTOR (3 downto 0);
+           Overflow : out STD_LOGIC;
+           Z_out : out STD_LOGIC
+           );
+end component;
+
+component Register_Bank 
+    Port ( Clk : in STD_LOGIC;
+           Reset : in STD_LOGIC;
+           D : in STD_LOGIC_VECTOR (3 downto 0);
+           R0 : out STD_LOGIC_VECTOR (3 downto 0);
+           R1 : out STD_LOGIC_VECTOR (3 downto 0);
+           R2 : out STD_LOGIC_VECTOR (3 downto 0);
+           R3 : out STD_LOGIC_VECTOR (3 downto 0);
+           R4 : out STD_LOGIC_VECTOR (3 downto 0);
+           R5 : out STD_LOGIC_VECTOR (3 downto 0);
+           R6 : out STD_LOGIC_VECTOR (3 downto 0);
+           R7 : out STD_LOGIC_VECTOR (3 downto 0);
+           I : in STD_LOGIC_VECTOR (2 downto 0));
+end component;
+
+component Adder_3bit
+    Port ( 
+            A : in STD_LOGIC_VECTOR (2 downto 0);
+            S: out STD_LOGIC_VECTOR (2 downto 0);
+            C_out : out STD_LOGIC
+            );
+end component;
+
+component PC
+    Port ( Clk : in STD_LOGIC;
+           Reset : in STD_LOGIC;
+           D : in STD_LOGIC_VECTOR (2 downto 0);
+           O : out STD_LOGIC_VECTOR (2 downto 0));
+end component;
+
+component Instruction_Decoder
+    Port ( I : in STD_LOGIC_VECTOR (11 downto 0);
+           Reg_Check_Jump : in STD_LOGIC_VECTOR (3 downto 0);
+           Load_Select : out STD_LOGIC;
+           Imm_Value : out STD_LOGIC_VECTOR (3 downto 0);
+           Reg_Enable : out STD_LOGIC_VECTOR (2 downto 0);
+           Reg_Select_1 : out STD_LOGIC_VECTOR (2 downto 0);
+           Reg_Select_2 : out STD_LOGIC_VECTOR (2 downto 0);
+           Add_Sub : out STD_LOGIC;
+           Jump_Flag : out STD_LOGIC;
+           Address : out STD_LOGIC_VECTOR (2 downto 0)
+           );
+end component;
+
+component Mux_2_to_1_3bit
+    Port ( Sel : in STD_LOGIC;
+           D0 : in STD_LOGIC_VECTOR (2 downto 0);
+           D1 : in STD_LOGIC_VECTOR (2 downto 0);
+           Y : out STD_LOGIC_VECTOR (2 downto 0));
+end component;
+
+component Mux_2_to_1_4bit
+    Port ( S : in STD_LOGIC;
+           A : in STD_LOGIC_VECTOR (3 downto 0);
+           B : in STD_LOGIC_VECTOR (3 downto 0);
+           X : out STD_LOGIC_VECTOR (3 downto 0));
+end component;
+
+component Mux_8_to_1_4bit
+    Port ( S : in STD_LOGIC_VECTOR (2 downto 0);
+           A0 : in STD_LOGIC_VECTOR (3 downto 0);
+           A1 : in STD_LOGIC_VECTOR (3 downto 0);
+           A2 : in STD_LOGIC_VECTOR (3 downto 0);
+           A3 : in STD_LOGIC_VECTOR (3 downto 0);
+           A4 : in STD_LOGIC_VECTOR (3 downto 0);
+           A5 : in STD_LOGIC_VECTOR (3 downto 0);
+           A6 : in STD_LOGIC_VECTOR (3 downto 0);
+           A7 : in STD_LOGIC_VECTOR (3 downto 0);
+           Y : out STD_LOGIC_VECTOR (3 downto 0));
+end component;
+
+component Program_ROM
+    Port ( Mem_Sel : in STD_LOGIC_VECTOR (2 downto 0);
+           Ins_Bus : out STD_LOGIC_VECTOR (11 downto 0));
+end component;
+ 
+signal Load_Select,Add_Sub_Selector,Jump_Flag,Overflow_0,Z_out : STD_LOGIC;
+signal Ins_Bus : STD_LOGIC_VECTOR (11 downto 0);
+signal O,b,Add_Out,Reg_Enable,Reg_Select_1,Reg_Select_2 : STD_LOGIC_VECTOR (2 downto 0);
+signal Address : STD_LOGIC_VECTOR (2 downto 0);
+signal Imm_Value,R0,R1,R2,R3,R4,R5,R6,R7,S,X,Y1,Y2: STD_LOGIC_VECTOR (3 downto 0);
+--signal R: STD_LOGIC_VECTOR (3 downto 0);
+signal Clk_out : STD_LOGIC;
+
+begin
+
+SlowClock : Slow_Clk
+    Port map (
+        Clk_in => Clk,
+        Clk_out => Clk_out
     );
-end Nanoprocessor;
 
-architecture Behavioral of Nanoprocessor is
+LUT :LUT_16_7
+    Port map (
+        address => R7,
+        Data => Display
+    );
+    
+ProgramCounter : PC
+    Port Map(
+        Clk => Clk_out,
+        Reset => Reset,
+        D => b,
+        O => O
+    );
 
-signal Clock : std_logic; -- Clock
-signal Reset : std_logic; -- Reset
+ProgramRom : Program_Rom
+    Port Map(
+        Ins_Bus => Ins_Bus,
+        Mem_Sel => O
+    );
+InstructionDecoder: Instruction_Decoder
+    Port Map(
+       I => Ins_Bus,
+       Reg_Check_Jump => Y1,
+       Load_Select => Load_Select,
+       Imm_Value  => Imm_Value,
+       Reg_Enable => Reg_Enable,
+       Reg_Select_1 => Reg_Select_1,
+       Reg_Select_2 => Reg_Select_2,
+       Add_Sub => Add_Sub_Selector,
+       Jump_Flag => Jump_Flag,
+       Address => Address
+    );
 
-    signal Next_Address : instruction_address; -- From PC Incremeter to Address Selector
-    signal Current_Address : instruction_address; -- From PC to ROM
-    signal Selected_Address : instruction_address; -- From Address Selector to PC
-    signal Jump_Address : instruction_address; -- From Instruction Decoder to Address Selector
-    signal Jump_Flag : std_logic; -- From Instruction Decoder to Address Selector
-    signal Instruction : instruction_bus; -- From Program ROM to Instruction Decoder
-    
-    signal Load_Selection : std_logic; -- From Instruction Decoder to Load Selector
-    signal Immediate_Value : data_bus; -- From Instruction Decoder to Load Selector
-    signal OprASelect : register_address; -- From Instruction Decoder to Operand Selector A
-    signal OprBSelect : register_address; -- From Instruction Decoder to Operand Selector B
-    signal OprAData : data_bus; -- From Operand Selector A to AU
-    signal OprBData : data_bus; -- From Operand Selector B to AU
-    signal Operation_Res : data_bus; -- From AU to Load Selector
-    signal Register_Data : data_buses; -- From Register Bank to Operand Selectors
-    signal AddSubSelect : Operation_Sel; -- From Instruction Decoder to AU
-    signal Register_Enable : register_address; -- From Instruction Decoder to Register Bank
-    signal Selected_Load : data_bus; -- From Load Selector to Register Bank
-    
-    begin
-
-        Clock <= Clk;
-        Reset <= Res;
-    
-        -- Program Counter
-        Program_Counter : PC port map(
-            A => Selected_Address, -- From Address Selector
-            Clk => Clock,
-            Res => Reset,
-            M => Current_Address -- Goes to ROM
-        );
-    
-        -- Program Counter Incrementer
-        PC_Incrementer : PC_Inc port map(
-            A_in => Current_Address, -- From PC
-            A_out => Next_Address -- To Address Selector
-        );
-    
-        -- Address Selector
-        Address_Selector_0 : Address_Selector port map(
-            PC => Next_Address, -- From PC Incrementer
-            JA => Jump_Address, -- From Instruction Decoder
-            J => Jump_Flag, -- From Instruction Decoder
-            A => Selected_Address -- To Program Counter
-        );
-    
-        -- Program ROM
-        Program_ROM_0 : Program_ROM port map(
-            ROM_address => Current_Address, -- From PC
-            I => Instruction -- To Instruction Decoder
-        ); 
-    
-        -- Instruction Decoder
-        Instruction_Decoder : IDecoder port map(
-            I => Instruction, -- From Program ROM
-            RCJump => OprAData, -- From Operand Selector A
-            REN => Register_Enable, -- To Register Bank 
-            RSA => OprASelect, -- To Operand Selector A
-            RSB => OprBSelect, -- To Operand Selector B
-            OpS => AddSubSelect, -- To AU
-            IM => Immediate_Value, -- To Load Selector
-            J => Jump_Flag, -- To Address Selector
-            JA => Jump_Address, -- To Address Selector
-            L => Load_Selection -- To Load Selector
-        );
-    
-        -- Load Selector
-        Load_Selector_0 : Load_Selector port map(
-            LS => Load_Selection, -- From Instruction Decoder
-            IM => Immediate_Value, -- From Instruction Decoder
-            R => Operation_Res, -- From AU
-            O => Selected_Load -- To Register Bank
-        );
-    
-        -- Operand Selector (Multiplexer) A
-        Opr_Selector_A : Opr_Selector port map(
-            Control => OprASelect, -- From Instruction Decoder
-            Data => Register_Data, -- From Register Bank
-            Selected => OprAData -- To AU
-        );
-    
-        -- Operand Selector (Multiplexer) B
-        Opr_Selector_B : Opr_Selector port map(
-            Control => OprBSelect, -- From Instruction Decoder
-            Data => Register_Data, -- From Register Bank
-            Selected => OprBData -- To AU
-        );
-    
-        -- Arithmetic Unit
-        Arithmetic_Unit_0 : AU port map(
-            I1 => OprAData, -- From Operand Selector A
-            I2 => OprBData, -- From Operand Selector B
-            O => Operation_Res, -- To Load Selector
-            Overflow => Overflow, -- To Overflow Flag
-            Zero => Zero, -- To Zero Flag
-            Operation => AddSubSelect -- From Instruction Decoder
-        );
-    
-        -- Register Bank
-        Register_Bank_0 : Register_Bank port map(
-            Reg_EN => Register_Enable, -- From Instruction Decoder
-            Res => Reset, -- Reset
-            Clk => Clock,
-            Data => Selected_Load, -- From Load Selector
-            Data_Buses => Register_Data -- To Operand Selectors
-        );
-    
-        Data <= Register_Data(7); -- Last Register Data
-        
-    end Behavioral;
+Mux_2_to_1_4bit_1 : Mux_2_to_1_4bit
+    Port Map (
+       S => Load_Select,
+       A => S,
+       B => Imm_Value,
+       X => X
+    );
+Registerbank : Register_Bank
+    Port Map (
+       Clk => Clk_out,
+       Reset => Reset,
+       D => X,
+       R0 => R0,
+       R1 => R1,
+       R2 => R2,
+       R3 => R3,
+       R4 => R4,
+       R5 => R5,
+       R6 => R6,
+       R7 => R7,
+       I => Reg_Enable      
+    );
+Mux_8_to_1_4bit_0 : Mux_8_to_1_4bit
+    Port Map (
+       S => Reg_Select_1,
+       A0 => R0,
+       A1 => R1,
+       A2 => R2,
+       A3 => R3,
+       A4 => R4,
+       A5 => R5,
+       A6 => R6,
+       A7 => R7,
+       Y => Y1
+    );
+Mux_8_to_1_4bit_1 : Mux_8_to_1_4bit
+    Port Map (
+       S => Reg_Select_2,
+       A0 => R0,
+       A1 => R1,
+       A2 => R2,
+       A3 => R3,
+       A4 => R4,
+       A5 => R5,
+       A6 => R6,
+       A7 => R7,
+       Y => Y2  
+    ); 
+AddSub : Add_Sub
+    Port Map (
+       A => Y1,
+       B => Y2,
+       Ctrl => Add_Sub_Selector,
+       C_out => Carry,
+       S => S,
+       Overflow => Overflow_0, 
+       Z_out => Z_out
+    );
+Mux_2_to_1_3bit_0 : Mux_2_to_1_3bit
+    Port map (
+       Sel => Jump_Flag,
+       D0 => Add_Out,
+       D1 => Address,
+       Y => b
+    );
+Adder3bit : Adder_3bit
+    Port Map( 
+       A => O,
+       S => Add_Out,
+       C_out => open
+    );  
+Reg <= R7;
+Zero <= Z_out;
+Overflow <= Overflow_0;
+Anode <= "1110";
+end Behavioral;
