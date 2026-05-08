@@ -1,29 +1,44 @@
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.buses.instruction_address;
-use work.Cpu_Components.Reg;
 
 entity PC is
-    Port ( A : in instruction_address;
-           Res : in STD_LOGIC;
-           Clk : in STD_LOGIC;
-           M : out instruction_address);
+    Port ( Clk : in STD_LOGIC;
+           Reset : in STD_LOGIC;
+           D : in STD_LOGIC_VECTOR (2 downto 0);
+           O : out STD_LOGIC_VECTOR (2 downto 0));
 end PC;
 
 architecture Behavioral of PC is
-
+component D_FF
+    Port ( D : in STD_LOGIC;
+           Res : in STD_LOGIC;
+           Clk : in STD_LOGIC;
+           Q : out STD_LOGIC
+           );
+end component;
+signal Res_Sig : STD_LOGIC:= '1';
 begin
-
-    -- 3 bit register 
-    Reg_0 : Reg
-        generic map (N => 3)
-        port map(
-                D => A,
-                Res => Res,
-                EN => '1',
-                Clk => Clk,
-                Q => M
-            );
-
-    
+DFF_0 : D_FF
+    PORT MAP (
+        D => D(0),
+        Q => O(0),
+        Clk => Clk,
+        Res => Res_Sig
+    );
+DFF_1 : D_FF
+    PORT MAP (
+        D => D(1),
+        Q => O(1),
+        Clk => Clk,
+        Res => Res_Sig
+    );
+DFF_2 : D_FF
+    PORT MAP (
+        D => D(2),
+        Q => O(2),
+        Clk => Clk,
+        Res => Res_Sig
+    );
+Res_Sig <= Reset;
 end Behavioral;
