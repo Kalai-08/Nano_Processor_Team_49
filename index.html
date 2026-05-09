@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nano Processor Team 49 - Repo Walkthrough</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101214;
+      --panel: #181c20;
+      --panel-2: #20262c;
+      --text: #eef2f5;
+      --muted: #aeb8c2;
+      --line: #35414a;
+      --accent: #61d394;
+      --accent-2: #f4c95d;
+      --accent-3: #6bb7ff;
+      --danger: #ff7b7b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    main {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: minmax(280px, 0.82fr) minmax(360px, 1.18fr);
+      gap: 32px;
+      align-items: center;
+      padding: clamp(24px, 5vw, 64px);
+      opacity: 0;
+      transform: translateX(28px);
+      pointer-events: none;
+      transition: opacity 480ms ease, transform 480ms ease;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .kicker {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      letter-spacing: 0;
+      line-height: 1.04;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(48px, 7vw, 92px);
+    }
+
+    h2 {
+      font-size: clamp(34px, 4.4vw, 60px);
+    }
+
+    p {
+      color: var(--muted);
+      font-size: clamp(17px, 1.6vw, 23px);
+      line-height: 1.55;
+      margin: 22px 0 0;
+      max-width: 760px;
+    }
+
+    .visual {
+      min-height: 420px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .tree,
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      color: #dce6ee;
+      font: 15px/1.55 Consolas, Cascadia Mono, monospace;
+    }
+
+    .tree strong,
+    .mark {
+      color: var(--accent-2);
+      font-weight: 800;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .box {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .box.accent {
+      border-color: rgba(97, 211, 148, 0.8);
+      color: var(--accent);
+    }
+
+    .box.warn {
+      border-color: rgba(244, 201, 93, 0.8);
+      color: var(--accent-2);
+    }
+
+    .table {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 0.7fr 1.5fr;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 12px;
+      font-size: 16px;
+    }
+
+    .row b {
+      color: var(--accent-3);
+      font-family: Consolas, Cascadia Mono, monospace;
+    }
+
+    .controls {
+      border-top: 1px solid var(--line);
+      background: #0d0f11;
+      padding: 14px clamp(16px, 4vw, 40px);
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    button {
+      height: 40px;
+      min-width: 44px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    .progress {
+      height: 9px;
+      background: #22282e;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width 160ms linear;
+    }
+
+    .counter {
+      color: var(--muted);
+      font: 14px Consolas, Cascadia Mono, monospace;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      main {
+        min-height: 100vh;
+      }
+
+      .stage {
+        min-height: 820px;
+      }
+
+      .slide {
+        grid-template-columns: 1fr;
+        align-content: start;
+        padding: 24px;
+      }
+
+      .visual {
+        min-height: 360px;
+      }
+
+      .flow {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="stage" aria-live="polite">
+      <article class="slide active">
+        <div>
+          <div class="kicker">Repo Walkthrough</div>
+          <h1>Nano Processor - Team 49</h1>
+          <p>A quick guided tour of the important folders, VHDL modules, current ROM program, tests, and Vivado entry points.</p>
+        </div>
+        <div class="visual">
+          <div class="flow">
+            <div class="box accent">4-bit datapath</div>
+            <div class="box">12-bit instruction</div>
+            <div class="box warn">8 ROM slots</div>
+            <div class="box">Register bank</div>
+            <div class="box">ALU flags</div>
+            <div class="box">7-segment output</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Navigation Map</div>
+          <h2>Start from the organized main implementation.</h2>
+          <p>The clean source layout is under <span class="mark">components/</span>. Tests and the imported advanced Vivado set live separately.</p>
+        </div>
+        <div class="visual">
+          <pre class="tree">Nano_Processor_Team_49/
+|-- <strong>components/</strong>        main VHDL design
+|-- <strong>tests/</strong>             main module testbenches
+|-- <strong>Instruction.txt</strong>     instruction notes
+|-- <strong>Design/</strong>            design diagrams
+`-- <strong>Nano_Processor_advanced/</strong>
+    |-- srcs_1/       imported sources
+    |-- sim_1/        imported testbenches
+    `-- constrn_1/    Basys 3 constraints</pre>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Top Level</div>
+          <h2>The main processor is wired in one top module.</h2>
+          <p><span class="mark">components/Nanoprocessor.vhd</span> connects the clock divider, program counter, ROM, decoder, register bank, muxes, adder/subtractor, and display output.</p>
+        </div>
+        <div class="visual">
+          <div class="flow">
+            <div class="box">Slow_Clk</div>
+            <div class="box">PC</div>
+            <div class="box">Program_ROM</div>
+            <div class="box">Instruction_Decoder</div>
+            <div class="box accent">Register_Bank</div>
+            <div class="box warn">Add_Sub</div>
+            <div class="box">Muxes</div>
+            <div class="box">LUT_16_7</div>
+            <div class="box accent">R7 output</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Instruction Format</div>
+          <h2>Every instruction is 12 bits.</h2>
+          <p>The decoder splits opcode, registers, immediate values, and jump addresses from the instruction bus.</p>
+        </div>
+        <div class="visual">
+          <div class="table">
+            <div class="row"><b>I(11 downto 10)</b><span>Opcode</span></div>
+            <div class="row"><b>I(9 downto 7)</b><span>RegA</span></div>
+            <div class="row"><b>I(6 downto 4)</b><span>RegB</span></div>
+            <div class="row"><b>I(3 downto 0)</b><span>Immediate value</span></div>
+            <div class="row"><b>I(2 downto 0)</b><span>Jump address for JZR</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Instruction Set</div>
+          <h2>The current datapath supports four main operations.</h2>
+          <p>Special encodings for absolute difference and multiplication are documented in <span class="mark">Instruction.txt</span> and appear in the advanced source set.</p>
+        </div>
+        <div class="visual">
+          <div class="table">
+            <div class="row"><b>00 ADD</b><span>RegA gets RegA + RegB</span></div>
+            <div class="row"><b>01 SUB/NEG</b><span>Adder/subtractor subtraction mode</span></div>
+            <div class="row"><b>10 MOVI</b><span>RegA gets immediate value</span></div>
+            <div class="row"><b>11 JZR</b><span>Jump when selected register is zero</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Program ROM</div>
+          <h2>The current program calculates 1 + 2 + 3.</h2>
+          <p>Edit <span class="mark">components/program-rom/Program_Rom.vhd</span> to change the instruction sequence.</p>
+        </div>
+        <div class="visual">
+          <pre>"100010000001", -- 0: Movi R1, 1
+"100100000010", -- 1: Movi R2, 2
+"001110010000", -- 2: Add  R7, R1
+"001110100000", -- 3: Add  R7, R2
+"100110000011", -- 4: Movi R3, 3
+"001110110000", -- 5: Add  R7, R3
+"100010000000", -- 6: Movi R1, 0
+"110000000111"  -- 7: JZR  R0, 7</pre>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Expected Result</div>
+          <h2>R7 is the visible result register.</h2>
+          <p>After the ROM program runs, <span class="mark">R7 = 0110</span>, which is decimal 6. That value is exposed through the `Reg` output and seven-segment display path.</p>
+        </div>
+        <div class="visual">
+          <div class="flow">
+            <div class="box">R1 = 1</div>
+            <div class="box">R2 = 2</div>
+            <div class="box">R3 = 3</div>
+            <div class="box accent">R7 = R7 + R1</div>
+            <div class="box accent">R7 = R7 + R2</div>
+            <div class="box accent">R7 = R7 + R3</div>
+            <div class="box warn">0110</div>
+            <div class="box warn">Decimal 6</div>
+            <div class="box">Display output</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Advanced Folder</div>
+          <h2>The advanced set is imported separately.</h2>
+          <p>Use <span class="mark">Nano_Processor_advanced/srcs_1</span>, <span class="mark">sim_1</span>, and <span class="mark">constrn_1</span> together when creating a separate Vivado project.</p>
+        </div>
+        <div class="visual">
+          <div class="chip-row">
+            <span class="chip">Comparator.vhd</span>
+            <span class="chip">multiplier_4.vhd</span>
+            <span class="chip">Program_ROM.vhd</span>
+            <span class="chip">Register_Bank.vhd</span>
+            <span class="chip">PC.vhd</span>
+            <span class="chip">Basys3Labs.xdc</span>
+            <span class="chip">TB_NanoProcessor.vhd</span>
+            <span class="chip">TB_Comparator.vhd</span>
+          </div>
+          <p class="note">Before using this set, confirm that file names and entity names match inside Vivado.</p>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Simulation</div>
+          <h2>Use focused testbenches to validate modules.</h2>
+          <p>The main tests are in <span class="mark">tests/</span>. The advanced source set also includes a wider simulation folder.</p>
+        </div>
+        <div class="visual">
+          <div class="table">
+            <div class="row"><b>TB_Add_Sub.vhd</b><span>4-bit adder/subtractor</span></div>
+            <div class="row"><b>TB_AS.vhd</b><span>Additional add/sub checks</span></div>
+            <div class="row"><b>TB_Adder_3bit.vhd</b><span>3-bit adder</span></div>
+            <div class="row"><b>sim_1/</b><span>Advanced/imported testbenches</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide">
+        <div>
+          <div class="kicker">Vivado Path</div>
+          <h2>Recommended flow for the main design.</h2>
+          <p>Create an RTL project, add the `components/` VHDL files, set `NanoProcessor` as the top module, add constraints for hardware, then synthesize and generate the bitstream.</p>
+        </div>
+        <div class="visual">
+          <div class="flow">
+            <div class="box">Create RTL project</div>
+            <div class="box">Add components/</div>
+            <div class="box accent">Set NanoProcessor top</div>
+            <div class="box">Add tests/</div>
+            <div class="box">Add constraints</div>
+            <div class="box warn">Generate bitstream</div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <nav class="controls" aria-label="Walkthrough controls">
+      <button id="prev" type="button" title="Previous slide">&lt;</button>
+      <button id="play" type="button" title="Play or pause">Pause</button>
+      <div class="progress" aria-hidden="true"><div id="bar" class="bar"></div></div>
+      <div id="counter" class="counter">1 / 10</div>
+    </nav>
+  </main>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const prev = document.getElementById("prev");
+    const play = document.getElementById("play");
+    const bar = document.getElementById("bar");
+    const counter = document.getElementById("counter");
+    const duration = 6500;
+    let index = 0;
+    let playing = true;
+    let started = performance.now();
+
+    function show(nextIndex) {
+      index = (nextIndex + slides.length) % slides.length;
+      slides.forEach((slide, slideIndex) => {
+        slide.classList.toggle("active", slideIndex === index);
+      });
+      counter.textContent = `${index + 1} / ${slides.length}`;
+      started = performance.now();
+      bar.style.width = "0%";
+    }
+
+    function tick(now) {
+      if (playing) {
+        const elapsed = now - started;
+        const percent = Math.min(100, (elapsed / duration) * 100);
+        bar.style.width = `${percent}%`;
+        if (elapsed >= duration) {
+          show(index + 1);
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    prev.addEventListener("click", () => show(index - 1));
+    play.addEventListener("click", () => {
+      playing = !playing;
+      play.textContent = playing ? "Pause" : "Play";
+      started = performance.now();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") show(index - 1);
+      if (event.key === "ArrowRight") show(index + 1);
+      if (event.key === " ") {
+        event.preventDefault();
+        play.click();
+      }
+    });
+
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
