@@ -11,7 +11,7 @@ end TB_Instruction_Decoder;
 architecture Behavioral of TB_Instruction_Decoder is
 component Instruction_Decoder
     Port ( I : in STD_LOGIC_VECTOR (11 downto 0);
-           Reg_Check_Jump : in STD_LOGIC_VECTOR (3 downto 0);
+           Reg_Check_Jump : in STD_LOGIC_VECTOR (3 downto 0);--
            Load_Select : out STD_LOGIC;
            Imm_Value : out STD_LOGIC_VECTOR (3 downto 0);
            Reg_Enable : out STD_LOGIC_VECTOR (2 downto 0);
