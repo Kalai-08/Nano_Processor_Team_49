@@ -1,34 +1,42 @@
-Our instruction has totally 12 bits
+BASYS3 NANOPROCESSOR – INSTRUCTION & I/O DESCRIPTION
 
-I(11 downto 10) = OpCode
-I(9 downto 7)   = RegA
-I(6 downto 4)   = RegB
-I(3 downto 0)   = Immediate value / Address
+This document explains the instruction format, control signals, register mapping, and input/output behavior of the nanoprocessor implemented on Basys3 FPGA board.
 
-For Jump instruction:
-I(2 downto 0) = Address
+1. CLOCK AND RESET
 
+The system uses the onboard clock connected to Clk (W5 pin). This clock controls all sequential operations of the processor.
 
-Our instructions are -
+The Reset button is connected to U18. When reset is pressed, all registers are cleared, program counter is reset, and outputs are initialized to zero.
 
-ADD      00 with Imm not 1111 or 1110  (Addition)
-ABS DIFF 00 with Imm = 1111            (Absolute Difference)
-MUL      00 with Imm = 1110            (Multiplication)
-SUB/NEG  01                            (Subtraction / Negation)
-MOVI     10                            (Move Immediate)
-JZR      11                            (Jump if Zero)
+2. INSTRUCTION FORMAT
 
+The instruction is 12 bits wide and arranged as follows:
 
-Special control signals:
+I(11 downto 10) : Opcode
+I(9 downto 7)   : RegA
+I(6 downto 4)   : RegB
+I(3 downto 0)   : Immediate value or address
 
-Abs_Diff = 1 when OpCode = 00 and Imm = 1111
-Multiply = 1 when OpCode = 00 and Imm = 1110
-Add_Sub  = 1 when OpCode = 01
-Load_Select = 1 when OpCode = 10
-Jump_Flag = 1 when OpCode = 11 and selected register value is 0000
+For jump instructions, I(2 downto 0) is used as the address field.
 
+3. INSTRUCTION SET
 
-Register Codes -
+ADD      : 00 (when immediate is not 1111 or 1110)
+ABS DIFF : 00 (when immediate = 1111)
+MUL      : 00 (when immediate = 1110)
+SUB/NEG  : 01
+MOVI     : 10
+JZR      : 11 (jump if zero condition is satisfied)
+
+4. CONTROL SIGNALS
+
+Abs_Diff    is enabled when opcode = 00 and immediate = 1111
+Multiply    is enabled when opcode = 00 and immediate = 1110
+Add_Sub     is enabled when opcode = 01
+Load_Select is enabled when opcode = 10
+Jump_Flag   is enabled when opcode = 11 and selected register value is 0000
+
+5. REGISTER MAPPING
 
 R0 = 000
 R1 = 001
@@ -38,3 +46,29 @@ R4 = 100
 R5 = 101
 R6 = 110
 R7 = 111
+
+6. LED OUTPUT
+
+The lower register output is connected to LEDs as follows:
+Reg(0) → U16
+Reg(1) → E19
+Reg(2) → U19
+Reg(3) → V19
+
+Additional status LEDs:
+Overflow → N3
+Zero     → P1
+Carry    → L1
+
+These LEDs show ALU result and status flags.
+
+7. SEVEN SEGMENT DISPLAY
+
+The 7-segment display is connected using Display[6:0] signals.
+Anodes are connected for digit selection.
+
+The display shows either ALU result or register output depending on control logic.
+
+8. OPERATION
+
+After reset, the system waits for instruction input. Based on opcode, the control unit generates signals and the ALU performs the required operation. The result is stored in registers and displayed using LEDs and 7-segment display. If JZR condition is satisfied, the program counter performs a jump.
